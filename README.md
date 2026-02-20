@@ -1,16 +1,66 @@
-# React + Vite
+# 🍓 Salada Mania SLZ
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicativo mobile de **vendas de salada de frutas** desenvolvido para pequenos negócios locais, com foco em **pedidos online**, **gestão de pedidos** e **envio automático via WhatsApp**.
 
-Currently, two official plugins are available:
+O projeto foi pensado para substituir ou complementar plataformas como iFood, reduzindo taxas e dando **controle total ao vendedor**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## 📱 Visão Geral
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+O **Salada Mania SLZ** possui duas interfaces principais:
 
-## Expanding the ESLint configuration
+- 👤 **Área do Cliente**: onde o usuário monta o pedido e finaliza a compra  
+- 🏪 **Painel do Vendedor**: onde o lojista gerencia pedidos, estoque e configurações
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+O design segue uma identidade **soft/candy**, com foco em usabilidade mobile-first.
+
+---
+
+## ✨ Funcionalidades
+
+### 👤 Cliente
+- Cardápio interativo
+- Escolha de creme, tamanho e adicionais
+- Carrinho de compras
+- Cálculo automático do total
+- Seleção de delivery ou retirada
+- Formas de pagamento (Pix, cartão, dinheiro)
+- Envio do pedido automaticamente via WhatsApp
+- Histórico de pedidos
+- Cadastro e perfil do usuário
+
+### 🏪 Vendedor (Admin)
+- Dashboard com resumo diário
+- Controle de pedidos em tempo real
+- Atualização de status do pedido
+- Gestão de estoque (cremes e adicionais)
+- Ativar/desativar produtos
+- Configuração de taxa de entrega
+- Configuração de horários da loja
+- Relatórios financeiros (dia/semana/mês)
+
+---
+
+## 🛠️ Tecnologias Utilizadas
+
+### Frontend
+- React Native
+- Expo
+- React Navigation
+- Styled Components / Tailwind (dependendo da versão)
+
+### Backend
+- Firebase ou Supabase
+- Autenticação de usuários
+- Banco de dados em tempo real
+- Storage de imagens
+
+### Integrações
+- WhatsApp (link ou API)
+- Pix
+- Notificações Push (Firebase Cloud Messaging)
+
+---
+
+## 📁 Estrutura do Projeto (exemplo)
