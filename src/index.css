@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #ec4899; 
+  --color-primary-light: #f472b6; 
+  --color-background: #fdf2f8; 
+  --color-background-alt: #fce7f3; 
+  --color-card: #fbcfe8;
+  --color-success: #10b981; 
+  --color-accent: #fbbf24; 
+  --color-text-main: #1f2937; 
+  --color-text-muted: #6b7280; 
+
+  --font-sans: "Poppins", "Nunito", sans-serif;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text-main);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer utilities {
+  .shadow-soft {
+    box-shadow: 0 4px 20px -2px rgba(236, 72, 153, 0.1);
+  }
+  .glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+  }
+}
