@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Store, TrendingUp, ShoppingBag, Edit2, ChevronRight, Home, LayoutList, Settings, MoreHorizontal, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -9,8 +10,15 @@ function cn(...inputs) {
 }
 
 export default function AdminDashboard() {
-    const { orders, updateOrderStatus, inventory, updateInventoryStock } = useCart();
-    const [isOpen, setIsOpen] = useState(true);
+    const navigate = useNavigate();
+    const { orders, updateOrderStatus, inventory, updateInventoryStock, isStoreOpen, toggleStoreStatus, adicionais, toggleAdicionalAvailability } = useCart();
+    const [expandedOrderIds, setExpandedOrderIds] = useState([]);
+
+    const toggleOrderDetails = (orderId) => {
+        setExpandedOrderIds(prev =>
+            prev.includes(orderId) ? prev.filter(id => id !== orderId) : [...prev, orderId]
+        );
+    };
 
     const cremesList = ['Ninho', 'Maracujá', 'Iogurte Natural'];
     const cremeIcons = { 'Ninho': '🍦', 'Maracujá': '🍋', 'Iogurte Natural': '🥛' };
@@ -21,7 +29,7 @@ export default function AdminDashboard() {
     };
 
     return (
-        <div className="pb-24 bg-background min-h-screen">
+        <div className="admin-theme pb-24 bg-background min-h-screen">
 
             {/* Header */}
             <header className="flex items-center justify-between px-5 py-4 bg-white shadow-soft sticky top-0 z-20">
@@ -36,11 +44,11 @@ export default function AdminDashboard() {
                 </div>
                 <div className="flex items-center gap-2">
                     <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" checked={isOpen} onChange={() => setIsOpen(!isOpen)} />
+                        <input type="checkbox" className="sr-only peer" checked={isStoreOpen} onChange={toggleStoreStatus} />
                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success"></div>
                     </label>
-                    <span className={cn("text-xs font-bold", isOpen ? "text-success" : "text-text-muted")}>
-                        {isOpen ? 'Aberto' : 'Fechado'}
+                    <span className={cn("text-xs font-bold", isStoreOpen ? "text-success" : "text-text-muted")}>
+                        {isStoreOpen ? 'Aberto' : 'Fechado'}
                     </span>
                 </div>
             </header>
@@ -124,6 +132,36 @@ export default function AdminDashboard() {
                     </div>
                 </section>
 
+                {/* Adicionais */}
+                <section>
+                    <div className="flex items-center justify-between mb-3">
+                        <h2 className="text-[11px] font-extrabold text-text-muted tracking-widest uppercase">Gerenciar Adicionais</h2>
+                    </div>
+                    <div className="bg-white rounded-[2rem] p-4 shadow-soft space-y-3">
+                        {adicionais.map((adicional) => (
+                            <div key={adicional.name} className="flex items-center justify-between py-2 border-b border-background-alt last:border-0">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-background-alt p-2 rounded-xl text-primary-light">
+                                        <Settings size={18} />
+                                    </div>
+                                    <div>
+                                        <p className="font-extrabold text-sm text-text-main leading-tight">{adicional.name}</p>
+                                        <p className="text-[10px] text-text-muted font-bold">
+                                            Status: <span className={cn(adicional.available ? "text-success" : "text-text-muted")}>
+                                                {adicional.available ? 'Ativo' : 'Inativo'}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" className="sr-only peer" checked={adicional.available} onChange={() => toggleAdicionalAvailability(adicional.name)} />
+                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-success"></div>
+                                </label>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
                 {/* Pedidos Recentes */}
                 <section>
                     <div className="flex items-center justify-between mb-3">
@@ -148,6 +186,8 @@ export default function AdminDashboard() {
                                     borderClass = "border-l-success";
                                     bgClass = "bg-success/20 text-success";
                                 }
+
+                                const isExpanded = expandedOrderIds.includes(order.id);
 
                                 return (
                                     <div key={order.id} className={cn("bg-white rounded-3xl p-5 shadow-soft border border-background-alt border-l-4", borderClass, order.status === 'Finalizado' ? "opacity-75" : "")}>
@@ -179,10 +219,65 @@ export default function AdminDashboard() {
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <p className="font-extrabold text-primary-light text-base">R$ {order.total.toFixed(2).replace('.', ',')}</p>
-                                            <button className="bg-white text-primary border border-primary/20 hover:bg-primary-light/5 transition-colors font-bold text-[11px] px-4 py-2 rounded-xl shadow-sm">
-                                                Ver Detalhes
+                                            <button
+                                                onClick={() => toggleOrderDetails(order.id)}
+                                                className="bg-white text-primary border border-primary/20 hover:bg-primary-light/5 transition-colors font-bold text-[11px] px-4 py-2 rounded-xl shadow-sm"
+                                            >
+                                                {isExpanded ? 'Ocultar Detalhes' : 'Ver Detalhes'}
                                             </button>
                                         </div>
+
+                                        {/* Detalhes Expandidos */}
+                                        {isExpanded && (
+                                            <div className="mt-4 pt-4 border-t border-background-alt space-y-3">
+                                                <div>
+                                                    <h4 className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider mb-2">Itens do Pedido</h4>
+                                                    <div className="space-y-2">
+                                                        {order.items.map((item, idx) => (
+                                                            <div key={idx} className="bg-white p-3 rounded-xl border border-primary/5 shadow-sm">
+                                                                <div className="flex justify-between items-start mb-1">
+                                                                    <span className="font-bold text-xs text-text-main">{item.qty}x {item.name}</span>
+                                                                    <span className="font-bold text-xs text-primary-light">R$ {(item.price * item.qty).toFixed(2).replace('.', ',')}</span>
+                                                                </div>
+                                                                {item.add && item.add !== 'Nenhum' ? (
+                                                                    <div className="mt-2">
+                                                                        <p className="text-[10px] font-bold text-text-muted mb-1">Adicionais:</p>
+                                                                        <ul className="space-y-1">
+                                                                            {item.add.split(', ').map((opt, optIdx) => (
+                                                                                <li key={optIdx} className="text-[10px] text-text-main flex justify-between bg-background-alt px-2 py-1 rounded-md">
+                                                                                    <span>• {opt}</span>
+                                                                                </li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    </div>
+                                                                ) : (
+                                                                    <p className="text-[10px] text-text-muted mt-1 italic">Sem adicionais extras</p>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {order.customer && (
+                                                    <div>
+                                                        <h4 className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider mb-2">Dados do Cliente</h4>
+                                                        <div className="bg-white p-3 rounded-xl border border-primary/5 shadow-sm space-y-1">
+                                                            <p className="text-[11px] text-text-main"><span className="font-bold text-text-muted">Nome:</span> {order.customer.nome}</p>
+                                                            <p className="text-[11px] text-text-main"><span className="font-bold text-text-muted">WhatsApp:</span> {order.customer.telefone}</p>
+                                                            {order.deliveryType === 'Entrega' && (
+                                                                <div className="mt-2 pt-2 border-t border-background-alt">
+                                                                    <p className="text-[11px] text-text-main"><span className="font-bold text-text-muted">Endereço:</span> {order.customer.endereco}, {order.customer.numero}</p>
+                                                                    <p className="text-[11px] text-text-main"><span className="font-bold text-text-muted">Bairro:</span> {order.customer.bairro}</p>
+                                                                    {order.customer.complemento && (
+                                                                        <p className="text-[11px] text-text-main"><span className="font-bold text-text-muted">Comp:</span> {order.customer.complemento}</p>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })
@@ -198,7 +293,7 @@ export default function AdminDashboard() {
                         <Home size={20} className="fill-current" />
                         <span className="text-[9px] font-bold">Início</span>
                     </button>
-                    <button className="flex flex-col items-center gap-1 text-text-muted hover:text-primary transition-colors">
+                    <button onClick={() => navigate('/admin/vendas')} className="flex flex-col items-center gap-1 text-text-muted hover:text-primary transition-colors">
                         <LayoutList size={20} />
                         <span className="text-[9px] font-semibold">Vendas</span>
                     </button>

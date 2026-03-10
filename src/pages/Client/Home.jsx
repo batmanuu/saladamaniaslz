@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { ShoppingBag } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Header from '../../components/Header';
@@ -12,11 +12,35 @@ function cn(...inputs) {
 
 export default function ClientHome() {
     const navigate = useNavigate();
-    const { addToCart, cartTotal, cartCount, inventory } = useCart();
+    const { addToCart, cartTotal, cartCount, inventory, isStoreOpen, adicionais } = useCart();
 
     const [selectedCreme, setSelectedCreme] = useState('Maracujá');
     const [selectedSize, setSelectedSize] = useState('400ml');
     const [selectedAdicionais, setSelectedAdicionais] = useState(['Granola', 'Doce de Leite']);
+
+    // Drag to scroll functionality
+    const sliderRef = useRef(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [startX, setStartX] = useState(0);
+    const [scrollLeft, setScrollLeft] = useState(0);
+
+    const startDragging = (e) => {
+        setIsDragging(true);
+        setStartX(e.pageX - sliderRef.current.offsetLeft);
+        setScrollLeft(sliderRef.current.scrollLeft);
+    };
+
+    const stopDragging = () => {
+        setIsDragging(false);
+    };
+
+    const onDragging = (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const x = e.pageX - sliderRef.current.offsetLeft;
+        const walk = (x - startX) * 2; // O multiplicador '2' é a velocidade do scroll
+        sliderRef.current.scrollLeft = scrollLeft - walk;
+    };
 
     const cremes = [
         { id: 'maracuja', name: 'Maracujá', icon: '🍋', bg: 'bg-yellow-100 text-yellow-600' },
@@ -24,17 +48,34 @@ export default function ClientHome() {
         { id: 'iogurte', name: 'Iogurte Natural', icon: '🍃', bg: 'bg-green-50 text-green-500' }
     ];
 
+    const heroSlides = [
+        {
+            id: 1,
+            image: "https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?q=80&w=1000&auto=format&fit=crop",
+            badge: "O favorito de São Luís! 📍",
+            title: "Creme de Ninho",
+            subtitle: "Frutas selecionadas."
+        },
+        {
+            id: 2,
+            image: "src/assets/maracuja.jpeg",
+            badge: "Novidade! ✨",
+            title: "Creme de Maracujá",
+            subtitle: "Sabor inconfundível para o seu dia."
+        },
+        {
+            id: 3,
+            image: "https://images.unsplash.com/photo-1551024601-bec78aea704b?q=80&w=1000&auto=format&fit=crop",
+            badge: "Refrescante 🍃",
+            title: "Iogurte Natural",
+            subtitle: "Leve e refrescante."
+        }
+    ];
+
     const sizes = [
         { id: '300ml', volume: '300ml', desc: 'O tamanho ideal para um lanche', price: 12 },
         { id: '400ml', volume: '400ml', desc: 'O mais pedido de hoje! 🔥', price: 14 },
         { id: '500ml', volume: '500ml', desc: 'Para quem ama salada de frutas', price: 16 }
-    ];
-
-    const adicionais = [
-        { name: 'Granola', price: 0 },
-        { name: 'Amendoim', price: 0 },
-        { name: 'Aveia', price: 0 },
-        { name: 'Doce de Leite', price: 0, tag: 'GRÁTIS HOJE! 🎁' }
     ];
 
     const toggleAdicional = (name) => {
@@ -64,7 +105,7 @@ export default function ClientHome() {
     };
 
     const currentStock = inventory?.find(i => i.creme === selectedCreme && i.size === selectedSize)?.stock || 0;
-    const isReadyToAdd = currentStock > 0;
+    const isReadyToAdd = currentStock > 0 && isStoreOpen;
 
     return (
         <div className="pb-32 bg-background min-h-screen">
@@ -73,26 +114,57 @@ export default function ClientHome() {
             {/* Hero */}
             <div className="px-4 mt-2">
                 <div className="relative rounded-3xl overflow-hidden h-64 bg-slate-800 shadow-soft">
-                    <img src="https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?q=80&w=1000&auto=format&fit=crop" alt="Salada de Frutas" className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay" />
-                    <div className="absolute top-4 left-4 bg-primary-light/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">
-                        O favorito de São Luís! 📍
-                    </div>
-                    <div className="absolute inset-x-4 bottom-8 text-white">
-                        <h2 className="text-3xl font-extrabold mb-1">Peça sua Frutinha</h2>
-                        <p className="text-sm font-medium text-white/90">Frutas selecionadas e cremes irresistíveis.</p>
+                    <div
+                        ref={sliderRef}
+                        onMouseDown={startDragging}
+                        onMouseUp={stopDragging}
+                        onMouseLeave={stopDragging}
+                        onMouseMove={onDragging}
+                        className={cn(
+                            "flex overflow-x-auto snap-x snap-mandatory h-full [&::-webkit-scrollbar]:hidden w-full relative",
+                            isDragging ? "cursor-grabbing snap-none" : "cursor-grab"
+                        )}
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    >
+                        {heroSlides.map((slide) => (
+                            <div key={slide.id} className="min-w-full h-full relative snap-center flex-shrink-0">
+                                <img
+                                    src={slide.image}
+                                    alt={slide.title}
+                                    className="absolute inset-0 w-full h-full object-cover"
+                                    draggable="false"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none"></div>
+                                <div className="absolute top-4 left-4 bg-primary-light/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm pointer-events-none z-10">
+                                    {slide.badge}
+                                </div>
+                                <div className="absolute inset-x-4 bottom-8 text-white pointer-events-none z-10">
+                                    <h2 className="text-3xl font-extrabold mb-1 drop-shadow-md">{slide.title}</h2>
+                                    <p className="text-sm font-medium text-white/90 drop-shadow-md">{slide.subtitle}</p>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
                 {/* Status Card */}
-                <div className="glass-card -mt-6 mx-4 relative z-10 rounded-2xl p-4 flex items-center justify-between shadow-soft border border-white/50">
+                <div className="glass-card -mt-6 mx-4 relative z-10 rounded-2xl p-4 flex items-center justify-between shadow-soft border border-white/50 transition-colors duration-300">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary-light/20 flex items-center justify-center text-primary-light relative">
-                            <span className="absolute top-0 right-0 w-3 h-3 bg-success rounded-full border-2 border-white"></span>
-                            🛵
+                        <div className={cn("w-10 h-10 rounded-full flex items-center justify-center relative",
+                            isStoreOpen ? "bg-primary-light/20 text-primary-light" : "bg-gray-200 dark:bg-gray-700 text-gray-500"
+                        )}>
+                            <span className={cn("absolute top-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-card",
+                                isStoreOpen ? "bg-success" : "bg-gray-400"
+                            )}></span>
+                            {isStoreOpen ? '🛵' : '💤'}
                         </div>
                         <div>
-                            <p className="font-bold text-sm">Delivery Tá ON!</p>
-                            <p className="text-xs text-text-muted">A partir das 15h</p>
+                            <p className="font-bold text-sm">
+                                {isStoreOpen ? 'Delivery Tá ON!' : 'Loja Fechada'}
+                            </p>
+                            <p className="text-xs text-text-muted">
+                                {isStoreOpen ? 'A partir das 15h' : 'Voltamos em breve'}
+                            </p>
                         </div>
                     </div>
                     <div className="text-right">
@@ -116,10 +188,10 @@ export default function ClientHome() {
                                 key={creme.name}
                                 onClick={() => setSelectedCreme(creme.name)}
                                 className={cn(
-                                    "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all",
+                                    "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300",
                                     selectedCreme === creme.name
-                                        ? "border-primary-light bg-primary-light/5 shadow-sm"
-                                        : "border-transparent bg-white shadow-soft"
+                                        ? "border-primary-light bg-primary-light/10 shadow-sm"
+                                        : "border-transparent bg-card shadow-soft hover:border-primary-light/50"
                                 )}
                             >
                                 <div className={cn("w-12 h-12 rounded-full flex items-center justify-center text-2xl mb-2", creme.bg)}>
@@ -145,11 +217,11 @@ export default function ClientHome() {
                                     onClick={() => !isOutOfStock && setSelectedSize(size.id)}
                                     disabled={isOutOfStock}
                                     className={cn(
-                                        "w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all text-left",
-                                        isOutOfStock ? "opacity-50 cursor-not-allowed bg-gray-50 border-transparent shadow-none" :
+                                        "w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all duration-300 text-left",
+                                        isOutOfStock ? "opacity-50 cursor-not-allowed bg-background-alt border-transparent shadow-none" :
                                             selectedSize === size.id
-                                                ? "border-primary-light bg-primary-light/5 shadow-sm"
-                                                : "border-transparent bg-white shadow-soft hover:border-primary-light/50"
+                                                ? "border-primary-light bg-primary-light/10 shadow-sm"
+                                                : "border-transparent bg-card shadow-soft hover:border-primary-light/50"
                                     )}
                                 >
                                     <div className="flex items-center gap-4">
@@ -181,23 +253,23 @@ export default function ClientHome() {
                 <section>
                     <h3 className="text-lg font-extrabold text-text-main mb-4">3. Adicionais</h3>
                     <div className="flex flex-wrap gap-2">
-                        {adicionais.map(adicional => {
+                        {adicionais.filter(a => a.available).map(adicional => {
                             const isSelected = selectedAdicionais.includes(adicional.name);
                             return (
                                 <button
                                     key={adicional.name}
                                     onClick={() => toggleAdicional(adicional.name)}
                                     className={cn(
-                                        "px-4 py-2 rounded-full border-2 text-sm font-semibold transition-all flex items-center gap-2",
+                                        "px-4 py-2 rounded-full border-2 text-sm font-semibold transition-all duration-300 flex items-center gap-2",
                                         isSelected
                                             ? "border-primary-light bg-primary-light/10 text-primary-light"
-                                            : "border-white bg-white text-text-main shadow-soft"
+                                            : "border-transparent bg-card text-text-main shadow-soft hover:border-primary-light/50"
                                     )}
                                 >
                                     {adicional.name}
                                     {adicional.tag && (
                                         <span className="bg-primary text-white text-[9px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider ml-1">
-                                            HOJE GRÁTIS!
+                                            {adicional.tag.toUpperCase()}
                                         </span>
                                     )}
                                     {adicional.price > 0 && !adicional.tag && (
@@ -224,21 +296,12 @@ export default function ClientHome() {
                     {isReadyToAdd ? `Adicionar no Carrinho (R$ ${currentPrice.toFixed(2).replace('.', ',')})` : 'Indisponível'}
                 </button>
 
-                {/* WhatsApp Banner */}
-                <div className="bg-primary-light/10 rounded-3xl p-6 text-center shadow-soft border border-primary-light/20 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-primary-light/20 rounded-full blur-2xl -mr-10 -mt-10"></div>
-                    <p className="text-primary font-bold mb-3 relative z-10">Faça seu pedido direto no WhatsApp</p>
-                    <a href="#" className="inline-flex items-center gap-2 bg-success text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-success/30 hover:shadow-success/50 transition-all relative z-10">
-                        <span className="text-xl">💬</span> (98) 99146-5154
-                    </a>
-                    <p className="text-[10px] text-text-muted mt-4 tracking-widest uppercase relative z-10">@saladamania_slz</p>
-                </div>
 
             </div>
 
             {/* Floating Bottom Bar */}
-            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-gradient-to-t from-background via-background to-transparent z-50">
-                <div className="bg-white p-2 pr-2 pl-4 rounded-[2rem] shadow-[0_-10px_40px_-15px_rgba(236,72,153,0.3)] border border-primary-light/10 flex items-center justify-between">
+            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-gradient-to-t from-background via-background/95 to-transparent z-50 transition-colors duration-300">
+                <div className="bg-card p-2 pr-2 pl-4 rounded-[2rem] shadow-[0_-10px_40px_-15px_rgba(236,72,153,0.3)] border border-primary-light/10 flex items-center justify-between transition-colors duration-300">
                     <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-full bg-primary-light/10 flex items-center justify-center text-primary-light relative">
                             <ShoppingBag size={20} />

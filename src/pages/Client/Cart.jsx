@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { NEIGHBORHOODS, RESTAURANT_COORDS, calculateDistance, calculateEstimates } from '../../utils/delivery';
 
 function cn(...inputs) {
     return twMerge(clsx(inputs));
@@ -20,10 +21,32 @@ export default function Cart() {
 
     const [nome, setNome] = useState('');
     const [telefone, setTelefone] = useState('');
-    const [endereco, setEndereco] = useState('');
+    const [selectedNeighborhood, setSelectedNeighborhood] = useState('');
+    const [waitingRideConfirmation, setWaitingRideConfirmation] = useState(false);
+    const [estimates, setEstimates] = useState(null);
 
     const deliveryFee = deliveryType === 'entrega' ? 0 : 0; // Configurable later
     const total = cartTotal + deliveryFee;
+
+    const handleNeighborhoodChange = (e) => {
+        const neighborhoodName = e.target.value;
+        setSelectedNeighborhood(neighborhoodName);
+        setPartner(null); // Reset partner when changing neighborhood
+
+        if (neighborhoodName) {
+            const neighborhood = NEIGHBORHOODS.find(n => n.name === neighborhoodName);
+            if (neighborhood) {
+                const distance = calculateDistance(
+                    RESTAURANT_COORDS.lat, RESTAURANT_COORDS.lng,
+                    neighborhood.lat, neighborhood.lng
+                );
+                const calcEstimates = calculateEstimates(distance);
+                setEstimates({ ...calcEstimates, destinationCoords: neighborhood });
+            }
+        } else {
+            setEstimates(null);
+        }
+    };
 
     const handleCheckout = () => {
         if (!paymentMethod) {
@@ -31,15 +54,35 @@ export default function Cart() {
             return;
         }
 
+        if (deliveryType === 'entrega') {
+            if (!selectedNeighborhood) {
+                alert('Por favor, selecione seu bairro.');
+                return;
+            }
+            if (!partner) {
+                alert('Por favor, selecione a plataforma para entrega (Uber ou 99).');
+                return;
+            }
+            // Intercept to show ride confirmation screen
+            setWaitingRideConfirmation(true);
+            return;
+        }
+
+        finalizeOrder();
+    };
+
+    const finalizeOrder = () => {
         const orderData = {
             deliveryType,
             paymentMethod,
-            customer: { nome, telefone, endereco },
-            deliveryFee
+            customer: { nome, telefone, endereco: selectedNeighborhood }, // Storing neighborhood as the address
+            deliveryFee,
+            partner
         };
 
         placeOrder(orderData);
         setOrderPlaced(true);
+        setWaitingRideConfirmation(false);
     };
 
     if (orderPlaced) {
@@ -55,6 +98,55 @@ export default function Cart() {
                 <Link to="/" className="bg-primary text-white px-8 py-4 rounded-full font-bold shadow-lg shadow-primary/30 active:scale-95 transition-transform">
                     Voltar ao Início
                 </Link>
+            </div>
+        );
+    }
+
+    if (waitingRideConfirmation) {
+        // Build Deep Links
+        const startLat = RESTAURANT_COORDS.lat;
+        const startLng = RESTAURANT_COORDS.lng;
+        const endLat = estimates?.destinationCoords?.lat || 0;
+        const endLng = estimates?.destinationCoords?.lng || 0;
+
+        // https://developer.uber.com/docs/riders/ride-requests/tutorials/deep-links/introduction
+        const uberUrl = `uber://?action=setPickup&pickup[latitude]=${startLat}&pickup[longitude]=${startLng}&dropoff[latitude]=${endLat}&dropoff[longitude]=${endLng}`;
+
+        // 99 App deeplink format (fallback to generic or web if needed)
+        // Adjusting to common known scheme or generic web URL for 99
+        const ninenineUrl = `taxis99://`;
+
+        return (
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-20 h-20 bg-primary/20 text-primary rounded-full flex items-center justify-center mb-6">
+                    <MapPin size={40} />
+                </div>
+                <h2 className="text-2xl font-extrabold text-text-main mb-2">Solicitar Corrida</h2>
+                <p className="text-text-muted mb-8 text-sm">
+                    Quase lá! Para que o pedido entre em preparo, você precisa solicitar a corrida no app escolhido.
+                </p>
+
+                <div className="space-y-4 w-full max-w-sm mb-8">
+                    {partner === 'uber' && (
+                        <a href={uberUrl} target="_blank" rel="noopener noreferrer" className="block w-full bg-black text-white py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-transform">
+                            Abrir Uber
+                        </a>
+                    )}
+                    {partner === '99' && (
+                        <a href={ninenineUrl} target="_blank" rel="noopener noreferrer" className="block w-full bg-[#FFD100] text-black py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-transform">
+                            Abrir 99
+                        </a>
+                    )}
+                </div>
+
+                <div className="space-y-3 w-full max-w-sm">
+                    <button onClick={finalizeOrder} className="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-lg shadow-primary/30 active:scale-95 transition-transform">
+                        Já solicitei a corrida
+                    </button>
+                    <button onClick={() => setWaitingRideConfirmation(false)} className="w-full bg-card text-text-main py-4 rounded-2xl font-bold active:scale-95 transition-transform">
+                        Voltar e editar pedido
+                    </button>
+                </div>
             </div>
         );
     }
@@ -75,7 +167,7 @@ export default function Cart() {
             <div className="px-5 mt-4 space-y-6">
 
                 {/* Cart Item Card */}
-                <div className="bg-white rounded-[2rem] p-6 shadow-soft relative">
+                <div className="bg-card rounded-[2rem] p-6 shadow-soft relative transition-colors duration-300">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="bg-primary/10 p-2 rounded-xl text-primary">
                             <ShoppingBag size={20} />
@@ -151,8 +243,8 @@ export default function Cart() {
                         </div>
                         <div className="flex justify-between items-center text-sm">
                             <span className="text-text-muted">Taxa de entrega</span>
-                            <span className="text-success font-semibold px-2 py-0.5 bg-success/10 rounded-md text-xs">
-                                {deliveryFee === 0 ? 'Grátis' : `R$ ${deliveryFee.toFixed(2).replace('.', ',')}`}
+                            <span className={cn("font-semibold px-2 py-0.5 rounded-md text-[11px]", deliveryType === 'entrega' ? "bg-primary/10 text-primary" : "bg-success/10 text-success")}>
+                                {deliveryType === 'entrega' ? 'Calculada no App parceiro' : 'Grátis'}
                             </span>
                         </div>
                         <div className="flex justify-between items-center pt-2">
@@ -163,7 +255,7 @@ export default function Cart() {
                 </div>
 
                 {/* Delivery Toggle */}
-                <div className="flex bg-white p-1.5 rounded-[2rem] shadow-soft mb-8">
+                <div className="flex bg-card p-1.5 rounded-[2rem] shadow-soft mb-8 transition-colors duration-300">
                     <button
                         onClick={() => setDeliveryType('entrega')}
                         className={cn(
@@ -203,7 +295,7 @@ export default function Cart() {
                                 value={nome}
                                 onChange={e => setNome(e.target.value)}
                                 placeholder="Como quer ser chamado?"
-                                className="w-full bg-white border-none rounded-2xl px-5 py-4 text-sm font-medium text-text-main shadow-soft placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                className="w-full bg-card border-none rounded-2xl px-5 py-4 text-sm font-medium text-text-main shadow-soft placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-300"
                             />
                         </div>
 
@@ -216,22 +308,28 @@ export default function Cart() {
                                 value={telefone}
                                 onChange={e => setTelefone(e.target.value)}
                                 placeholder="(98) 99146-5154"
-                                className="w-full bg-white border-none rounded-2xl px-5 py-4 text-sm font-medium text-text-main shadow-soft placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                className="w-full bg-card border-none rounded-2xl px-5 py-4 text-sm font-medium text-text-main shadow-soft placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-300"
                             />
                         </div>
 
                         {deliveryType === 'entrega' && (
                             <div className="relative">
                                 <label className="absolute -top-2.5 left-4 bg-background px-2 text-[10px] font-bold text-primary tracking-wide">
-                                    Endereço de Entrega
+                                    Bairro de Entrega
                                 </label>
-                                <textarea
-                                    value={endereco}
-                                    onChange={e => setEndereco(e.target.value)}
-                                    placeholder="Rua, número, bairro e ponto de referência"
-                                    rows={3}
-                                    className="w-full bg-white border-none rounded-2xl px-5 py-4 text-sm font-medium text-text-main shadow-soft placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
-                                />
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted">
+                                    <ChevronLeft size={16} className="-rotate-90" />
+                                </div>
+                                <select
+                                    value={selectedNeighborhood}
+                                    onChange={handleNeighborhoodChange}
+                                    className="w-full bg-card border-none rounded-2xl px-5 py-4 text-sm font-medium text-text-main shadow-soft focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none transition-colors duration-300"
+                                >
+                                    <option value="" disabled>Selecione o seu bairro...</option>
+                                    {NEIGHBORHOODS.map(n => (
+                                        <option key={n.name} value={n.name}>{n.name}</option>
+                                    ))}
+                                </select>
                             </div>
                         )}
                     </div>
@@ -253,7 +351,7 @@ export default function Cart() {
                             href="https://maps.google.com/?q=São+Luís,MA"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="bg-white text-primary text-xs font-bold px-4 py-2 rounded-full shadow-sm hover:shadow-md transition-all active:scale-95 border border-primary/10 inline-flex items-center gap-1"
+                            className="bg-card text-primary text-xs font-bold px-4 py-2 rounded-full shadow-sm hover:shadow-md transition-all active:scale-95 border border-primary/10 inline-flex items-center gap-1"
                         >
                             📍 Ver no Google Maps
                         </a>
@@ -267,8 +365,8 @@ export default function Cart() {
                         <button
                             onClick={() => setPaymentMethod('pix')}
                             className={cn(
-                                "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2",
-                                paymentMethod === 'pix' ? "border-primary bg-primary/5 shadow-sm" : "border-transparent bg-white shadow-soft"
+                                "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2 duration-300",
+                                paymentMethod === 'pix' ? "border-primary bg-primary/5 shadow-sm" : "border-transparent bg-card shadow-soft"
                             )}
                         >
                             <span className="text-2xl">⚡</span>
@@ -277,8 +375,8 @@ export default function Cart() {
                         <button
                             onClick={() => setPaymentMethod('cartao')}
                             className={cn(
-                                "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2",
-                                paymentMethod === 'cartao' ? "border-primary bg-primary/5 shadow-sm" : "border-transparent bg-white shadow-soft"
+                                "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2 duration-300",
+                                paymentMethod === 'cartao' ? "border-primary bg-primary/5 shadow-sm" : "border-transparent bg-card shadow-soft"
                             )}
                         >
                             <span className="text-2xl">💳</span>
@@ -288,8 +386,8 @@ export default function Cart() {
                             <button
                                 onClick={() => setPaymentMethod('dinheiro')}
                                 className={cn(
-                                    "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2 col-span-2",
-                                    paymentMethod === 'dinheiro' ? "border-primary bg-primary/5 shadow-sm" : "border-transparent bg-white shadow-soft"
+                                    "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2 col-span-2 duration-300",
+                                    paymentMethod === 'dinheiro' ? "border-primary bg-primary/5 shadow-sm" : "border-transparent bg-card shadow-soft"
                                 )}
                             >
                                 <span className="text-2xl">💵</span>
@@ -299,15 +397,54 @@ export default function Cart() {
                     </div>
                 </div>
 
-                {/* Partners (Commented out as replacing WhatsApp context) */}
-                {/* 
-                {deliveryType === 'entrega' && (
-                    <div className="bg-primary-light/5 border border-primary-light/20 rounded-3xl p-5 text-center flex flex-col items-center shadow-soft">
-                        <p className="text-[10px] font-bold tracking-widest text-text-muted uppercase mb-4">Também estamos no</p>
-                        ...
+                {/* Platform Estimates for Delivery */}
+                {deliveryType === 'entrega' && estimates && (
+                    <div className="mt-8">
+                        <h3 className="font-extrabold text-lg text-text-main mb-4 px-2 flex items-center justify-between">
+                            <span>Plataforma de Entrega</span>
+                        </h3>
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                            <button
+                                onClick={() => setPartner('uber')}
+                                className={cn(
+                                    "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2 duration-300",
+                                    partner === 'uber' ? "border-black bg-black/5 shadow-sm" : "border-transparent bg-card shadow-soft"
+                                )}
+                            >
+                                <span className="font-extrabold text-lg text-black">Uber Moto</span>
+                                <div className="text-center">
+                                    <span className="text-xs text-text-muted block mb-1">Estimativa:</span>
+                                    <span className="text-sm font-bold text-text-main">
+                                        R$ {estimates.uber.min.toFixed(2).replace('.', ',')} - R$ {estimates.uber.max.toFixed(2).replace('.', ',')}
+                                    </span>
+                                </div>
+                            </button>
+                            <button
+                                onClick={() => setPartner('99')}
+                                className={cn(
+                                    "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2 duration-300",
+                                    partner === '99' ? "border-black bg-[#FFD100]/20 shadow-sm" : "border-transparent bg-card shadow-soft"
+                                )}
+                            >
+                                <span className="font-extrabold text-lg flex items-center gap-1.5 text-text-main">
+                                    <span className="bg-[#FFD100] text-black px-1.5 py-0.5 rounded-lg leading-none">99</span>
+                                    Moto
+                                </span>
+                                <div className="text-center">
+                                    <span className="text-xs text-text-muted block mb-1">Estimativa:</span>
+                                    <span className="text-sm font-bold text-text-main">
+                                        R$ {estimates['99'].min.toFixed(2).replace('.', ',')} - R$ {estimates['99'].max.toFixed(2).replace('.', ',')}
+                                    </span>
+                                </div>
+                            </button>
+                        </div>
+                        <div className="px-2">
+                            <p className="text-[10px] text-text-muted font-medium bg-red-500/10 text-red-600 p-2 rounded-lg text-center">
+                                ⚠️ Valor final pode variar conforme demanda da plataforma. Prometemos apenas a estimativa.
+                            </p>
+                        </div>
                     </div>
                 )}
-                */}
 
             </div>
 

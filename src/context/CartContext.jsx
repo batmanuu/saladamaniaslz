@@ -25,9 +25,27 @@ export function CartProvider({ children }) {
         { id: 'Iogurte Natural-500ml', creme: 'Iogurte Natural', size: '500ml', stock: 5 },
     ];
 
+    const defaultAdicionais = [
+        { name: 'Granola', price: 0, available: true },
+        { name: 'Amendoim', price: 0, available: true },
+        { name: 'Aveia', price: 0, available: true },
+        { name: 'Doce de Leite', price: 0, tag: 'GRÁTIS HOJE! \ud83c\udf81', available: true }
+    ];
+
+    const [adicionais, setAdicionais] = useState(() => {
+        const saved = localStorage.getItem('sm_adicionais');
+        return saved ? JSON.parse(saved) : defaultAdicionais;
+    });
+
     const [inventory, setInventory] = useState(() => {
         const saved = localStorage.getItem('sm_inventory');
         return saved ? JSON.parse(saved) : defaultInventory;
+    });
+
+    // Store Status State (On/Off)
+    const [isStoreOpen, setIsStoreOpen] = useState(() => {
+        const saved = localStorage.getItem('sm_store_status');
+        return saved ? JSON.parse(saved) : true;
     });
 
     useEffect(() => {
@@ -42,6 +60,14 @@ export function CartProvider({ children }) {
         localStorage.setItem('sm_inventory', JSON.stringify(inventory));
     }, [inventory]);
 
+    useEffect(() => {
+        localStorage.setItem('sm_store_status', JSON.stringify(isStoreOpen));
+    }, [isStoreOpen]);
+
+    useEffect(() => {
+        localStorage.setItem('sm_adicionais', JSON.stringify(adicionais));
+    }, [adicionais]);
+
     // Handle cross-tab synchronization
     useEffect(() => {
         const handleStorageChange = (e) => {
@@ -53,6 +79,12 @@ export function CartProvider({ children }) {
             }
             if (e.key === 'sm_inventory') {
                 setInventory(e.newValue ? JSON.parse(e.newValue) : defaultInventory);
+            }
+            if (e.key === 'sm_store_status') {
+                setIsStoreOpen(e.newValue ? JSON.parse(e.newValue) : true);
+            }
+            if (e.key === 'sm_adicionais') {
+                setAdicionais(e.newValue ? JSON.parse(e.newValue) : defaultAdicionais);
             }
         };
 
@@ -169,11 +201,23 @@ export function CartProvider({ children }) {
         setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
     };
 
+    const toggleStoreStatus = () => {
+        setIsStoreOpen(prev => !prev);
+    };
+
+    const toggleAdicionalAvailability = (name) => {
+        setAdicionais(prev => prev.map(a =>
+            a.name === name ? { ...a, available: !a.available } : a
+        ));
+    };
+
     return (
         <CartContext.Provider value={{
             cartItems, addToCart, updateQty, removeItem, clearCart, cartTotal, cartCount,
             orders, placeOrder, updateOrderStatus,
-            inventory, updateInventoryStock
+            inventory, updateInventoryStock,
+            isStoreOpen, toggleStoreStatus,
+            adicionais, toggleAdicionalAvailability
         }}>
             {children}
         </CartContext.Provider>

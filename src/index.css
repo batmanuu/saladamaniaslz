@@ -2,15 +2,15 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #ec4899; 
-  --color-primary-light: #f472b6; 
-  --color-background: #fdf2f8; 
-  --color-background-alt: #fce7f3; 
+  --color-primary: #ec4899;
+  --color-primary-light: #f472b6;
+  --color-background: #fdf2f8;
+  --color-background-alt: #fce7f3;
   --color-card: #fbcfe8;
-  --color-success: #10b981; 
-  --color-accent: #fbbf24; 
-  --color-text-main: #1f2937; 
-  --color-text-muted: #6b7280; 
+  --color-success: #10b981;
+  --color-accent: #fbbf24;
+  --color-text-main: #1f2937;
+  --color-text-muted: #6b7280;
 
   --font-sans: "Poppins", "Nunito", sans-serif;
 }
@@ -21,15 +21,44 @@
     color: var(--color-text-main);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
+}
+
+.dark {
+  --color-background: #1e1e2f;
+  --color-background-alt: #2a2a40;
+  --color-card: #2d2d44;
+  --color-text-main: #f3f4f6;
+  --color-text-muted: #9ca3af;
+}
+
+/* Força as variáveis a retornarem ao modo claro no container do Admin */
+.admin-theme {
+  --color-background: #fdf2f8 !important;
+  --color-background-alt: #fce7f3 !important;
+  --color-card: #fbcfe8 !important;
+  --color-text-main: #1f2937 !important;
+  --color-text-muted: #6b7280 !important;
+  background-color: var(--color-background) !important;
+  color: var(--color-text-main) !important;
 }
 
 @layer utilities {
   .shadow-soft {
     box-shadow: 0 4px 20px -2px rgba(236, 72, 153, 0.1);
   }
+
+  .dark .shadow-soft {
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
+  }
+
   .glass-card {
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(8px);
+  }
+
+  .dark .glass-card {
+    background: rgba(45, 45, 68, 0.85);
   }
 }
