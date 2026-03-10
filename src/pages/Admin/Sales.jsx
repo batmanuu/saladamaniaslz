@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import { ShoppingBag, ChevronLeft, Calendar as CalendarIcon, Home, LayoutList, Settings, TrendingUp } from 'lucide-react';
+import { ShoppingBag, ChevronLeft, Calendar as CalendarIcon, Home, LayoutList, Settings, TrendingUp, LogOut } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -227,24 +227,24 @@ export default function AdminSales() {
             </div>
 
             {/* Bottom Nav */}
-            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-slate-100 z-50 px-6 py-3 shadow-[0_-10px_20px_rgba(0,0,0,0.03)]">
-                <div className="flex items-center justify-between">
-                    <button onClick={() => navigate('/admin')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors">
+            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-slate-100 z-40 px-6 py-3 shadow-[0_-10px_20px_rgba(0,0,0,0.03)]">
+                <div className="flex items-center justify-between relative">
+                    <Link to="/admin" className="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors">
                         <Home size={20} />
                         <span className="text-[9px] font-semibold">Início</span>
-                    </button>
-                    <button className="flex flex-col items-center gap-1 text-primary">
+                    </Link>
+                    <div className="flex flex-col items-center gap-1 text-primary cursor-pointer">
                         <LayoutList size={20} className="fill-current" />
                         <span className="text-[9px] font-bold">Vendas</span>
-                    </button>
+                    </div>
                     <button className="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors">
                         <ShoppingBag size={20} />
                         <span className="text-[9px] font-semibold">Produtos</span>
                     </button>
-                    <button className="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors">
+                    <Link to="/admin/config" className="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors">
                         <Settings size={20} />
                         <span className="text-[9px] font-semibold">Config</span>
-                    </button>
+                    </Link>
                 </div>
             </div>
 

@@ -1,5 +1,6 @@
 import { Moon, Sun, User } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { Link } from 'react-router-dom';
 
 export default function Header() {
     const { isDarkMode, toggleTheme } = useTheme();
@@ -11,8 +12,9 @@ export default function Header() {
                 <h1 className="text-primary font-bold text-xl italic tracking-tight" style={{ fontFamily: 'cursive' }}>Salada Mania</h1>
             </div>
             <div className="flex items-center gap-4 text-text-main">
-
-                <button className="hover:text-primary transition-colors"><User size={20} /></button>
+                <Link to="/admin" className="hover:text-primary transition-colors" title="Área do Lojista">
+                    <User size={20} />
+                </Link>
                 <button onClick={toggleTheme} className="hover:text-primary transition-colors focus:outline-none" aria-label="Alternar tema escuro e claro">
                     {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
                 </button>

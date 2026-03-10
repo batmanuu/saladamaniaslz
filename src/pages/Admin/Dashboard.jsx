@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Store, TrendingUp, ShoppingBag, Edit2, ChevronRight, Home, LayoutList, Settings, MoreHorizontal, Clock } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Store, TrendingUp, ShoppingBag, Edit2, ChevronRight, Home, LayoutList, Settings, MoreHorizontal, Clock, LogOut } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -287,24 +287,24 @@ export default function AdminDashboard() {
             </div>
 
             {/* Bottom Nav */}
-            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-background-alt z-50 px-6 py-3 shadow-[0_-10px_20px_rgba(0,0,0,0.03)]">
-                <div className="flex items-center justify-between">
-                    <button className="flex flex-col items-center gap-1 text-primary">
+            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-background-alt z-40 px-6 py-3 shadow-[0_-10px_20px_rgba(0,0,0,0.03)]">
+                <div className="flex items-center justify-between relative">
+                    <Link to="/admin" className="flex flex-col items-center gap-1 text-primary">
                         <Home size={20} className="fill-current" />
                         <span className="text-[9px] font-bold">Início</span>
-                    </button>
-                    <button onClick={() => navigate('/admin/vendas')} className="flex flex-col items-center gap-1 text-text-muted hover:text-primary transition-colors">
+                    </Link>
+                    <Link to="/admin/vendas" className="flex flex-col items-center gap-1 text-text-muted hover:text-primary transition-colors">
                         <LayoutList size={20} />
                         <span className="text-[9px] font-semibold">Vendas</span>
-                    </button>
+                    </Link>
                     <button className="flex flex-col items-center gap-1 text-text-muted hover:text-primary transition-colors">
                         <ShoppingBag size={20} />
                         <span className="text-[9px] font-semibold">Produtos</span>
                     </button>
-                    <button className="flex flex-col items-center gap-1 text-text-muted hover:text-primary transition-colors">
+                    <Link to="/admin/config" className="flex flex-col items-center gap-1 text-text-muted hover:text-primary transition-colors">
                         <Settings size={20} />
                         <span className="text-[9px] font-semibold">Config</span>
-                    </button>
+                    </Link>
                 </div>
             </div>
 

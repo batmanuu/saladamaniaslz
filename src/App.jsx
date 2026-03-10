@@ -3,6 +3,7 @@ import { CartProvider } from './context/CartContext';
 import ClientHome from './pages/Client/Home';
 import AdminDashboard from './pages/Admin/Dashboard';
 import AdminSales from './pages/Admin/Sales';
+import AdminConfig from './pages/Admin/Config';
 import Cart from './pages/Client/Cart';
 import Login from './pages/Admin/Login';
 import ProtectedRoute from './utils/ProtectedRoute';
@@ -18,6 +19,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/vendas" element={<ProtectedRoute><AdminSales /></ProtectedRoute>} />
+            <Route path="/admin/config" element={<ProtectedRoute><AdminConfig /></ProtectedRoute>} />
           </Routes>
         </div>
       </BrowserRouter>
