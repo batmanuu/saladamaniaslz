@@ -12,7 +12,7 @@ function cn(...inputs) {
 
 export default function ClientHome() {
     const navigate = useNavigate();
-    const { addToCart, cartTotal, cartCount } = useCart();
+    const { addToCart, cartTotal, cartCount, inventory } = useCart();
 
     const [selectedCreme, setSelectedCreme] = useState('Maracujá');
     const [selectedSize, setSelectedSize] = useState('400ml');
@@ -62,6 +62,9 @@ export default function ClientHome() {
         setSelectedSize('400ml');
         setSelectedAdicionais(['Granola', 'Doce de Leite']);
     };
+
+    const currentStock = inventory?.find(i => i.creme === selectedCreme && i.size === selectedSize)?.stock || 0;
+    const isReadyToAdd = currentStock > 0;
 
     return (
         <div className="pb-32 bg-background min-h-screen">
@@ -132,34 +135,45 @@ export default function ClientHome() {
                 <section>
                     <h3 className="text-lg font-extrabold text-text-main mb-4">2. Tamanho do Copo</h3>
                     <div className="space-y-3">
-                        {sizes.map(size => (
-                            <button
-                                key={size.id}
-                                onClick={() => setSelectedSize(size.id)}
-                                className={cn(
-                                    "w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all text-left",
-                                    selectedSize === size.id
-                                        ? "border-primary-light bg-primary-light/5 shadow-sm"
-                                        : "border-transparent bg-white shadow-soft"
-                                )}
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className={cn(
-                                        "w-10 h-10 rounded-xl flex items-center justify-center",
-                                        selectedSize === size.id ? "bg-primary-light text-white" : "bg-primary-light/10 text-primary-light"
-                                    )}>
-                                        🥛
+                        {sizes.map(size => {
+                            const thisStock = inventory?.find(i => i.creme === selectedCreme && i.size === size.id)?.stock || 0;
+                            const isOutOfStock = thisStock === 0;
+
+                            return (
+                                <button
+                                    key={size.id}
+                                    onClick={() => !isOutOfStock && setSelectedSize(size.id)}
+                                    disabled={isOutOfStock}
+                                    className={cn(
+                                        "w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all text-left",
+                                        isOutOfStock ? "opacity-50 cursor-not-allowed bg-gray-50 border-transparent shadow-none" :
+                                            selectedSize === size.id
+                                                ? "border-primary-light bg-primary-light/5 shadow-sm"
+                                                : "border-transparent bg-white shadow-soft hover:border-primary-light/50"
+                                    )}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className={cn(
+                                            "w-10 h-10 rounded-xl flex items-center justify-center",
+                                            isOutOfStock ? "bg-gray-200 text-gray-400" :
+                                                selectedSize === size.id ? "bg-primary-light text-white" : "bg-primary-light/10 text-primary-light"
+                                        )}>
+                                            🥛
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-sm">
+                                                {size.volume}
+                                                {isOutOfStock && <span className="ml-2 bg-red-100 text-red-500 text-[9px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider">Esgotado</span>}
+                                            </p>
+                                            <p className="text-[11px] text-text-muted">{size.desc}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="font-bold text-sm">{size.volume}</p>
-                                        <p className="text-[11px] text-text-muted">{size.desc}</p>
-                                    </div>
-                                </div>
-                                <p className={cn("font-bold", selectedSize === size.id ? "text-primary-light" : "text-primary-light")}>
-                                    R$ {size.price.toFixed(2).replace('.', ',')}
-                                </p>
-                            </button>
-                        ))}
+                                    <p className={cn("font-bold", isOutOfStock ? "text-gray-400" : "text-primary-light")}>
+                                        R$ {size.price.toFixed(2).replace('.', ',')}
+                                    </p>
+                                </button>
+                            );
+                        })}
                     </div>
                 </section>
 
@@ -198,13 +212,16 @@ export default function ClientHome() {
                     </div>
                 </section>
 
-                {/* Add to Cart Button (Inline) */}
                 <button
                     onClick={handleAddToCart}
-                    className="w-full bg-primary text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-primary/30 active:scale-95 transition-transform flex items-center justify-center gap-2"
+                    disabled={!isReadyToAdd}
+                    className={cn(
+                        "w-full py-4 rounded-2xl font-bold text-lg shadow-lg transition-transform flex items-center justify-center gap-2",
+                        isReadyToAdd ? "bg-primary text-white shadow-primary/30 active:scale-95" : "bg-gray-300 text-gray-500 shadow-none cursor-not-allowed"
+                    )}
                 >
                     <ShoppingBag size={20} />
-                    Adicionar no Carrinho (R$ {currentPrice.toFixed(2).replace('.', ',')})
+                    {isReadyToAdd ? `Adicionar no Carrinho (R$ ${currentPrice.toFixed(2).replace('.', ',')})` : 'Indisponível'}
                 </button>
 
                 {/* WhatsApp Banner */}
@@ -241,7 +258,11 @@ export default function ClientHome() {
                             Ver Pedido
                         </Link>
                     ) : (
-                        <button onClick={handleAddToCart} className="bg-primary text-white px-6 py-4 rounded-3xl font-bold shadow-md shadow-primary/30 active:scale-95 transition-transform">
+                        <button
+                            onClick={handleAddToCart}
+                            disabled={!isReadyToAdd}
+                            className={cn("px-6 py-4 rounded-3xl font-bold shadow-md transition-transform", isReadyToAdd ? "bg-primary text-white shadow-primary/30 active:scale-95" : "bg-gray-300 text-gray-500 cursor-not-allowed shadow-none")}
+                        >
                             Adicionar
                         </button>
                     )}

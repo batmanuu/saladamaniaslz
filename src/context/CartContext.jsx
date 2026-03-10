@@ -76,22 +76,67 @@ export function CartProvider({ children }) {
 
             return [...prev, { ...item, id: Date.now() }];
         });
+
+        // Deduct inventory when adding to cart
+        setInventory(prev => {
+            const parsedCreme = item.creme || item.name.split(' - ')[1];
+            const invId = `${parsedCreme}-${item.size}`;
+            return prev.map(inv => inv.id === invId ? { ...inv, stock: Math.max(0, inv.stock - 1) } : inv);
+        });
     };
 
     const updateQty = (id, delta) => {
-        setCartItems(prev => prev.map(item => {
-            if (item.id === id) {
-                return { ...item, qty: Math.max(1, item.qty + delta) };
-            }
-            return item;
-        }));
+        const item = cartItems.find(i => i.id === id);
+        if (!item) return;
+
+        const newQty = Math.max(1, item.qty + delta);
+        const actualDelta = newQty - item.qty;
+
+        if (actualDelta !== 0) {
+            setCartItems(prev => prev.map(i => i.id === id ? { ...i, qty: newQty } : i));
+
+            // Adjust inventory (if delta is +1, stock goes down -1. If delta returns -1, stock goes up +1)
+            setInventory(prev => {
+                const parsedCreme = item.creme || item.name.split(' - ')[1];
+                const invId = `${parsedCreme}-${item.size}`;
+                return prev.map(inv => inv.id === invId ? { ...inv, stock: Math.max(0, inv.stock - actualDelta) } : inv);
+            });
+        }
     };
 
     const removeItem = (id) => {
-        setCartItems(prev => prev.filter(item => item.id !== id));
+        const item = cartItems.find(i => i.id === id);
+        if (!item) return;
+
+        setCartItems(prev => prev.filter(i => i.id !== id));
+
+        // Restore inventory when removing from cart
+        setInventory(prev => {
+            const parsedCreme = item.creme || item.name.split(' - ')[1];
+            const invId = `${parsedCreme}-${item.size}`;
+            return prev.map(inv => inv.id === invId ? { ...inv, stock: inv.stock + item.qty } : inv);
+        });
     };
 
-    const clearCart = () => setCartItems([]);
+    const clearCart = () => {
+        // Restore all inventory when manually clearing the cart
+        setInventory(prev => {
+            let newInventory = [...prev];
+            cartItems.forEach(item => {
+                const parsedCreme = item.creme || item.name.split(' - ')[1];
+                const invId = `${parsedCreme}-${item.size}`;
+                const targetIndex = newInventory.findIndex(i => i.id === invId);
+                if (targetIndex !== -1) {
+                    newInventory[targetIndex] = {
+                        ...newInventory[targetIndex],
+                        stock: newInventory[targetIndex].stock + item.qty
+                    };
+                }
+            });
+            return newInventory;
+        });
+        setCartItems([]);
+    };
 
     const cartTotal = cartItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
     const cartCount = cartItems.reduce((acc, item) => acc + item.qty, 0);
@@ -108,29 +153,9 @@ export function CartProvider({ children }) {
         console.log("SM_ORDER_LOG: Placing order ", newOrder);
         setOrders(prev => [newOrder, ...prev]);
 
-        // Reduce inventory
-        setInventory(prev => {
-            let newInventory = [...prev];
-            cartItems.forEach(item => {
-                // item.name is like "Salada 400ml - Maracujá"
-                // Extracting creme might be tricky if not explicit, but we can do a robust split
-                // or assume we pass `creme` in Home.jsx. Let's assume `item.creme` exists, or fallback to parsing
-                const parsedCreme = item.creme || item.name.split(' - ')[1];
-                const parsedSize = item.size;
-                const invId = `${parsedCreme}-${parsedSize}`;
-
-                const targetIndex = newInventory.findIndex(i => i.id === invId);
-                if (targetIndex !== -1) {
-                    newInventory[targetIndex] = {
-                        ...newInventory[targetIndex],
-                        stock: Math.max(0, newInventory[targetIndex].stock - item.qty) // prevent negative
-                    };
-                }
-            });
-            return newInventory;
-        });
-
-        clearCart();
+        // Inventory is already reserved when added to cart, so we DO NOT restore it.
+        // We just clear the cart state.
+        setCartItems([]);
         return newOrder;
     };
 

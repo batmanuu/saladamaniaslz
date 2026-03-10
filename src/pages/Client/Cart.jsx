@@ -11,7 +11,7 @@ function cn(...inputs) {
 
 export default function Cart() {
     const navigate = useNavigate();
-    const { cartItems, updateQty, removeItem, cartTotal, placeOrder } = useCart();
+    const { cartItems, updateQty, removeItem, cartTotal, placeOrder, inventory } = useCart();
     const [orderPlaced, setOrderPlaced] = useState(false);
 
     const [deliveryType, setDeliveryType] = useState('entrega'); // 'entrega', 'retirada'
@@ -84,44 +84,53 @@ export default function Cart() {
                     </div>
 
                     <div className="space-y-6">
-                        {cartItems.map(item => (
-                            <div key={item.id} className="flex gap-4 items-start relative">
-                                <button
-                                    onClick={() => removeItem(item.id)}
-                                    className="absolute -top-2 -right-2 bg-red-100 text-red-500 w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs"
-                                >
-                                    ✕
-                                </button>
-                                <img
-                                    src="https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?q=80&w=200&auto=format&fit=crop"
-                                    alt="Salada"
-                                    className="w-20 h-20 rounded-2xl object-cover shadow-sm bg-slate-100"
-                                />
-                                <div className="flex-1">
-                                    <h3 className="font-bold text-sm text-text-main leading-tight mb-1">{item.name}</h3>
-                                    <p className="text-[11px] text-text-muted mb-3">Adicionais: {item.add}</p>
+                        {cartItems.map(item => {
+                            const parsedCreme = item.creme || item.name.split(' - ')[1];
+                            const currentStock = inventory?.find(i => i.creme === parsedCreme && i.size === item.size)?.stock || 0;
+                            const isMaxQty = currentStock === 0;
 
-                                    <div className="flex items-center justify-between">
-                                        <p className="font-extrabold text-primary">R$ {(item.price * item.qty).toFixed(2).replace('.', ',')}</p>
-                                        <div className="flex items-center gap-3 bg-background-alt px-3 py-1.5 rounded-2xl">
-                                            <button
-                                                onClick={() => updateQty(item.id, -1)}
-                                                className="text-primary font-bold px-1 active:scale-95 text-lg leading-none"
-                                            >
-                                                -
-                                            </button>
-                                            <span className="font-bold text-sm text-text-main w-3 text-center">{item.qty}</span>
-                                            <button
-                                                onClick={() => updateQty(item.id, 1)}
-                                                className="text-primary font-bold px-1 active:scale-95 text-lg leading-none"
-                                            >
-                                                +
-                                            </button>
+                            return (
+                                <div key={item.id} className="flex gap-4 items-start relative">
+                                    <button
+                                        onClick={() => removeItem(item.id)}
+                                        className="absolute -top-2 -right-2 bg-red-100 text-red-500 w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs"
+                                    >
+                                        ✕
+                                    </button>
+                                    <img
+                                        src="https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?q=80&w=200&auto=format&fit=crop"
+                                        alt="Salada"
+                                        className="w-20 h-20 rounded-2xl object-cover shadow-sm bg-slate-100"
+                                    />
+                                    <div className="flex-1">
+                                        <h3 className="font-bold text-sm text-text-main leading-tight mb-1">{item.name}</h3>
+                                        <p className="text-[11px] text-text-muted mb-3">Adicionais: {item.add}</p>
+
+                                        <div className="flex items-center justify-between">
+                                            <p className="font-extrabold text-primary">R$ {(item.price * item.qty).toFixed(2).replace('.', ',')}</p>
+                                            <div className="flex items-center gap-3 bg-background-alt px-3 py-1.5 rounded-2xl">
+                                                <button
+                                                    onClick={() => updateQty(item.id, -1)}
+                                                    className="text-primary font-bold px-1 active:scale-95 text-lg leading-none"
+                                                >
+                                                    -
+                                                </button>
+                                                <span className="font-bold text-sm text-text-main w-3 text-center">{item.qty}</span>
+                                                <button
+                                                    onClick={() => !isMaxQty && updateQty(item.id, 1)}
+                                                    disabled={isMaxQty}
+                                                    className={cn("font-bold px-1 text-lg leading-none transition-colors",
+                                                        isMaxQty ? "text-gray-300 cursor-not-allowed" : "text-primary active:scale-95"
+                                                    )}
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                         {cartItems.length === 0 && (
                             <p className="text-center text-text-muted text-sm py-4">Seu carrinho está vazio.</p>
                         )}
