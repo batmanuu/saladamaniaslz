@@ -48,7 +48,7 @@ O design segue uma identidade **soft/candy**, com foco em usabilidade mobile-fir
 - React Native
 - Expo
 - React Navigation
-- Styled Components / Tailwind (dependendo da versão)
+
 
 ### Backend
 - Firebase ou Supabase
